@@ -98,11 +98,32 @@ def _rpa_toolset(stub: bool = True) -> Any:
     return McpToolset(connection_params=StdioConnectionParams(server_params=params))
 
 
-def build_agent(model: str = "gemini-2.5-flash", stub: bool = True) -> Any:
+def build_agent(
+    model: str = "gemini-2.5-flash",
+    stub: bool = True,
+    use_uipath_gateway: bool = False,
+) -> Any:
+    """Build the RPA triage agent.
+
+    ``use_uipath_gateway=True`` swaps the model for ``UiPathGemini`` so
+    every LLM call is routed through UiPath's LLM Gateway. This is the
+    code path Maestro / Orchestrator runs in production; the local
+    Cloud Run / Streamlit demo keeps the plain Vertex AI string model.
+    """
     if not _ADK_AVAILABLE:
         return None
+    if use_uipath_gateway:
+        try:
+            from uipath_google_adk import UiPathGemini
+        except ImportError as exc:  # pragma: no cover
+            raise ImportError(
+                "Install uipath-google-adk: pip install uipath-google-adk"
+            ) from exc
+        model_obj: Any = UiPathGemini(model=model)
+    else:
+        model_obj = model
     return LlmAgent(
-        model=model,
+        model=model_obj,
         name="gemini_rpa_agent",
         instruction=SYSTEM_PROMPT,
         tools=[_rpa_toolset(stub=stub)],

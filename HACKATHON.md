@@ -14,10 +14,12 @@ verbatim error payload, and the canonical fix.
 
 | Rule | How we meet it |
 |---|---|
-| RPA / workflow-automation theme | Tool surface (`list_workflows`, `get_workflow_run`, `get_step_output`, `suggest_retry`) matches an n8n / UiPath RPA MCP shape; stub for demos, real orchestrator via env vars |
-| AI agent (not just a script) | `google.adk.agents.LlmAgent` with Gemini 2.5 Flash on Vertex AI walks the tools across multiple turns; output is structured with byte-for-byte verbatim EVIDENCE |
+| Orchestration runs through UiPath Platform | Maestro BPMN process invokes the coded agent published to UiPath Orchestrator via `uipath pack` + `uipath publish`. Entry point is `src/gemini_rpa_agent/uipath_entrypoint.py:main` with Pydantic `Input` / `Output` per the SDK contract. |
+| Agent logic runs through UiPath Platform | Every Gemini call is routed through the **UiPath LLM Gateway** via `UiPathGemini` from `uipath-google-adk`. No direct Vertex calls in production; the gateway is on the hot path. |
+| RPA / workflow-automation theme | Four-tool MCP surface (`list_workflows`, `get_workflow_run`, `get_step_output`, `suggest_retry`) matches a UiPath / n8n RPA orchestrator shape. Stub for demos, real orchestrator one env-var swap away. |
+| AI agent (not just a script) | `google.adk.agents.LlmAgent` walks the tools across multiple turns; output is structured with byte-for-byte verbatim EVIDENCE. |
 | Original work | Standalone repo, Apache 2.0 |
-| Runs on the web | Streamlit dashboard, Cloud Run deployable |
+| Runs on the web | Streamlit dashboard on Cloud Run as side-channel UI; Maestro is the production entry point. |
 
 ## Description
 

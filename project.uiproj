@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Agent",
+  "Name": "gemini-rpa-agent",
+  "Description": "GitLab CI failure triage agent on Google Cloud Agent Builder (ADK) + Gemini + GitLab MCP.",
+  "MainFile": null
+}

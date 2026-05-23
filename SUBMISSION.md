@@ -18,9 +18,11 @@ hackathons.
 
 **Long Description**
 
-    gemini-rpa-agent is a workflow-automation diagnosis agent. When an RPA run
-    fails at 09:14 UTC and the on-call asks "why?", the agent walks four
-    MCP tools end-to-end and answers with cited evidence:
+    gemini-rpa-agent is a workflow-automation diagnosis agent that runs as
+    a coded UiPath agent, orchestrated by a UiPath Maestro BPMN process.
+    When an RPA run fails at 09:14 UTC and the on-call asks "why?",
+    Maestro hands the query to the agent, which walks four MCP tools
+    end-to-end and answers with cited evidence:
 
     1. list_workflows(active_only)        — finds the failing workflow id
     2. get_workflow_run(run_id)           — walks the step trace
@@ -39,17 +41,19 @@ hackathons.
     paraphrasing. If the live tool result was "channel_not_found", the agent
     quotes "channel_not_found", not "the channel could not be found".
 
-    Built on Google Cloud Agent Builder (ADK) with Gemini 2.5 Flash on Vertex AI,
-    wired to an RPA MCP server. The repo ships a local stub seeded with a real
-    failure pattern (Slack notify failing because the workflow used a channel
-    name instead of a channel ID), plus one-env-var swap to any real n8n / UiPath
-    MCP server.
+    The coded agent is built on Google ADK with Gemini 2.5 Flash, packaged
+    via the official uipath-python SDK and published to UiPath Orchestrator
+    (uipath pack + uipath publish). Every Gemini call is routed through the
+    UiPath LLM Gateway via UiPathGemini from uipath-google-adk — the gateway
+    is on the hot path, not a side channel. The Streamlit dashboard on Cloud
+    Run is a side-channel UI for demos and debugging; production traffic
+    enters through Maestro.
 
 **Technology & Category Tags**
 
-    python, gemini, gemini-2-5, vertex-ai, google-cloud-agent-builder,
-    agent-development-kit, mcp, model-context-protocol, rpa, n8n, uipath,
-    workflow-automation, streamlit, google-cloud-run, apache-2
+    python, uipath, uipath-maestro, uipath-orchestrator, uipath-llm-gateway,
+    gemini, gemini-2-5, agent-development-kit, mcp, model-context-protocol,
+    rpa, workflow-automation, streamlit, google-cloud-run, apache-2
 
 ## 💻 App Hosting & Code Repository
 

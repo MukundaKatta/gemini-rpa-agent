@@ -1,0 +1,90 @@
+{
+    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+    "$id": "entry-points.json",
+    "entryPoints": [
+        {
+            "filePath": "agent",
+            "uniqueId": "51f2c97b-79a0-46d6-b12e-ccb49b4e292e",
+            "type": "agent",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "default": "Diagnose the most recent failed workflow run end-to-end.",
+                        "description": "What the operator wants the triage agent to do.",
+                        "title": "Query",
+                        "type": "string"
+                    },
+                    "model": {
+                        "default": "gemini-2.5-flash",
+                        "description": "Gemini model name; routed through UiPath LLM Gateway.",
+                        "title": "Model",
+                        "type": "string"
+                    },
+                    "stub": {
+                        "default": true,
+                        "description": "Use the bundled n8n/UiPath-shaped MCP stub for deterministic demo output. Set False to point at a real RPA MCP server configured via RPA_API_URL + RPA_API_TOKEN env vars.",
+                        "title": "Stub",
+                        "type": "boolean"
+                    }
+                },
+                "required": [],
+                "title": "Input"
+            },
+            "output": {
+                "type": "object",
+                "properties": {
+                    "report": {
+                        "description": "The 5-section triage report (ANSWER / EVIDENCE / ROOT CAUSE / REMEDIATION / NEXT STEP).",
+                        "title": "Report",
+                        "type": "string"
+                    },
+                    "events": {
+                        "description": "Ordered list of LLM/tool events for downstream Maestro tasks.",
+                        "items": {
+                            "properties": {
+                                "author": {
+                                    "type": "string"
+                                },
+                                "is_final": {
+                                    "default": false,
+                                    "title": "Is Final",
+                                    "type": "boolean"
+                                },
+                                "text": {
+                                    "default": "",
+                                    "title": "Text",
+                                    "type": "string"
+                                }
+                            },
+                            "title": "ToolEvent",
+                            "type": "object"
+                        },
+                        "title": "Events",
+                        "type": "array"
+                    },
+                    "error": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "report"
+                ],
+                "title": "Output"
+            },
+            "graph": {
+                "nodes": [
+                    {
+                        "id": "uipath_entrypoint.py:146",
+                        "name": "main",
+                        "type": "function",
+                        "metadata": {
+                            "file": "uipath_entrypoint.py"
+                        }
+                    }
+                ],
+                "edges": []
+            }
+        }
+    ]
+}

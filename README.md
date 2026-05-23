@@ -32,13 +32,22 @@ self-hosted):
 ## Architecture
 
 ```
-+----------------------+    +-----------------------+   +----------------------------+
-| Streamlit dashboard  |--> |  ADK LlmAgent         |-->|  RPA MCP server            |
-| on Cloud Run         |    |  Gemini 2.5 on Vertex |   |  (stub for demos,          |
-|                      |    |  AI                   |   |   real tenant via env vars)|
-| "diagnose run X..."  |    |                       |   |                            |
-+----------------------+    +-----------------------+   +----------------------------+
++---------------------+   +----------------------+   +----------------------+   +-----------------+
+| UiPath Maestro      |-->| ADK LlmAgent         |-->| UiPath LLM Gateway   |-->| RPA MCP server  |
+| BPMN process        |   | (uipath_entrypoint   |   | (UiPathGemini routes |   | (stub or real   |
+| Service Task hits   |   |  main coroutine)     |   |  every Gemini call)  |   | RPA orchestr.)  |
+| the coded agent     |   |                      |   |                      |   |                 |
++---------------------+   +----------------------+   +----------------------+   +-----------------+
 ```
+
+The orchestration entry point is **UiPath Maestro**, not the Streamlit
+dashboard. Maestro calls the coded agent published to UiPath
+Orchestrator via `uipath publish`; the agent uses `UiPathGemini` from
+`uipath-google-adk` so every Gemini call is routed through the UiPath
+LLM Gateway (not direct Vertex). This is what satisfies the AgentHack
+rule that "orchestration and agent logic must run through the UiPath
+Platform." The Streamlit dashboard on Cloud Run remains available as a
+side-channel UI for demos and local debugging.
 
 ## Output contract
 
@@ -55,7 +64,7 @@ NEXT STEP:   one follow-up check.
 Strict rule: EVIDENCE must be byte-for-byte from the tool output. The
 agent quotes the failing step's error JSON whole, never paraphrases.
 
-## Try it locally
+## Try it locally (Streamlit dashboard)
 
 ```bash
 git clone https://github.com/MukundaKatta/gemini-rpa-agent
@@ -69,6 +78,30 @@ export GOOGLE_CLOUD_LOCATION=us-central1
 
 PYTHONPATH=src .venv/bin/streamlit run app/dashboard.py
 ```
+
+## UiPath Maestro deployment
+
+```bash
+# 1. Pack the coded agent.
+uv run uipath pack
+# -> .uipath/gemini-rpa-agent.0.1.0.nupkg
+
+# 2. Authenticate against UiPath Community / Enterprise tenant.
+uv run uipath auth
+
+# 3. Publish to Orchestrator. The agent shows up under Personal Workspace.
+uv run uipath publish
+
+# 4. Smoke-test the entry point locally (Vertex fallback, skips gateway).
+UIPATH_LOCAL_TEST=1 GOOGLE_GENAI_USE_VERTEXAI=1 \
+  GOOGLE_CLOUD_PROJECT=your-project GOOGLE_CLOUD_LOCATION=us-central1 \
+  uv run uipath run agent '{"query": "Diagnose the most recent failed run."}'
+```
+
+Then build a Maestro BPMN process: **Start → "Start and wait for
+external agent" Service Task (pointing at the published
+`gemini-rpa-agent`) → End**. The Service Task's input maps to the
+agent's `Input.query`; the agent's `Output.report` flows downstream.
 
 ## Try it against a real RPA orchestrator
 

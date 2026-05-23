@@ -12,6 +12,9 @@ dependencies = [
     "mcp>=1.0.0",
     "streamlit>=1.40.0",
     "pandas>=2.2.0",
+    "uipath>=2.10.0",
+    "uipath-google-adk>=0.0.7",
+    "pydantic>=2.6",
 ]
 
 [project.optional-dependencies]
