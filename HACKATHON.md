@@ -52,5 +52,5 @@ streamlit, google-cloud-run, apache-2
 ## Try it out
 
 - Code repo: https://github.com/MukundaKatta/gemini-rpa-agent
-- Live demo (Cloud Run): pinned after deploy
-- Demo video (YouTube unlisted): pinned after upload
+- Live demo (Cloud Run): https://gemini-rpa-agent-1030412920700.us-central1.run.app
+- Demo video (YouTube unlisted): https://www.youtube.com/watch?v=zE2iUrS7__o
