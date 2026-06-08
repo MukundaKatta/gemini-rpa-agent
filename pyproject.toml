@@ -1,7 +1,7 @@
 [project]
 name = "gemini-rpa-agent"
 version = "0.1.0"
-description = "GitLab CI failure triage agent on Google Cloud Agent Builder (ADK) + Gemini + GitLab MCP."
+description = "RPA / workflow-automation failure-diagnosis agent on Google Cloud Agent Builder (ADK) + Gemini 2.5 + an RPA MCP server."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Mukunda Katta" }]
@@ -29,3 +29,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+gemini_rpa_agent = ["py.typed"]

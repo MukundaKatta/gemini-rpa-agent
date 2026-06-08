@@ -64,6 +64,58 @@ NEXT STEP:   one follow-up check.
 Strict rule: EVIDENCE must be byte-for-byte from the tool output. The
 agent quotes the failing step's error JSON whole, never paraphrases.
 
+## Use it as a library
+
+### Ask the agent a question (needs `google-adk` + Vertex credentials)
+
+```python
+from gemini_rpa_agent.runner import ask
+
+resp = ask(
+    "Workflow wf-onboarding-pro-2026-001 had a failure at 09:14 UTC — "
+    "tell me what broke and how to fix it.",
+    stub=True,                  # use the bundled RPA MCP stub
+    model="gemini-2.5-flash",
+)
+print(resp.final_text)          # the 5-section report
+print(len(resp.events))         # ordered LLM / tool events
+```
+
+If `google-adk` is not installed, `ask()` returns an `AgentResponse`
+whose `final_text` is an offline-fallback message and whose `error` is
+set — it never raises, so callers can degrade gracefully.
+
+### Call the RPA response builders directly (no third-party deps)
+
+The deterministic stub data and the four response builders are pure
+functions in `gemini_rpa_agent.rpa_data`. You can drive the diagnosis
+chain yourself without any LLM:
+
+```python
+from gemini_rpa_agent.rpa_data import (
+    list_workflows_response,
+    get_workflow_run_response,
+    get_step_output_response,
+    suggest_retry_response,
+)
+
+failed = next(
+    w for w in list_workflows_response()["workflows"]
+    if w["last_status"] == "failed"
+)
+run = get_workflow_run_response(failed["last_run_id"])
+bad_step = next(s for s in run["steps"] if s["status"] == "failed")
+evidence = get_step_output_response(run["run_id"], bad_step["step_id"])
+fix = suggest_retry_response(run["run_id"])
+
+print(evidence["output"]["error"])   # 'channel_not_found'
+print(fix["retry_command"])          # canonical retry CLI command
+```
+
+Every builder returns a plain `dict`; unknown run/step ids come back as
+an `{"error": ...}` envelope rather than raising, mirroring how a real
+orchestrator surfaces lookup misses.
+
 ## Try it locally (Streamlit dashboard)
 
 ```bash
@@ -115,15 +167,42 @@ RPA MCP server in place of the stub.
 
 ## Tests
 
+The unit suite is written against the Python **standard-library
+`unittest`** runner and has **no third-party dependencies** — it does not
+need `google-adk`, `mcp`, or `pydantic` installed. The tests put `src/`
+on `sys.path` themselves, so no editable install is required either:
+
 ```bash
-.venv/bin/pytest -q
+python3 -m unittest discover -s tests
 ```
 
-The suite pins the diagnosis chain end-to-end: `list_workflows` finds
-the failed onboarding workflow, `get_workflow_run` returns its
-three-step trace with `slack-notify` as the single failure,
-`get_step_output` returns the verbatim `channel_not_found` payload, and
-`suggest_retry` proposes the canonical channel-ID fix.
+This is exactly what CI runs (see `.github/workflows/ci.yml`, across
+Python 3.10–3.12). The suite pins the diagnosis chain end-to-end:
+`list_workflows` finds the failed onboarding workflow,
+`get_workflow_run` returns its three-step trace with `slack-notify` as
+the single failure, `get_step_output` returns the verbatim
+`channel_not_found` payload, and `suggest_retry` proposes the canonical
+channel-ID fix. It also covers the error-envelope paths (unknown
+run/step ids) and the agent's graceful offline fallback when `google-adk`
+is absent.
+
+The canned data and the four response builders live in the
+dependency-free `gemini_rpa_agent.rpa_data` module; `mcp_stub` re-exports
+them and adds the MCP transport on top (importing `mcp` lazily), so the
+pure logic stays unit-testable without standing up the MCP server.
+
+### Live Vertex smoke test (requires the full stack + credentials)
+
+```bash
+uv venv -q && uv pip install -q -e ".[dev]"
+GOOGLE_CLOUD_PROJECT=your-project GOOGLE_GENAI_USE_VERTEXAI=true \
+  GOOGLE_CLOUD_LOCATION=us-central1 \
+  .venv/bin/python scripts/smoke.py
+```
+
+This runs the question end-to-end through Gemini on the stub MCP server
+and asserts the agent emits all five labeled sections and quotes the
+verbatim `channel_not_found` error.
 
 ## License
 
